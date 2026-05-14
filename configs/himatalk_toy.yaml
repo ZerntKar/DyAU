@@ -1,0 +1,58 @@
+model:
+  audio_dim: 16
+  motion_dim: 32
+  hidden_dim: 64
+  interaction_dim: 64
+  lip_dim: 16
+  exp_dim: 16
+  state_dim: 16
+  affect_dim: 16
+  au_dim: 12
+  region_control_dim: 8
+  n_queries: 4
+  n_heads: 4
+  audio_layers: 1
+  motion_layers: 1
+  interaction_layers: 1
+  decoder_layers: 1
+  dropout: 0.1
+  pseudo_au_regions: [brow, eye, cheek, mouth, neck]
+  region_slices:
+    eye: [0, 8]
+    cheek: [8, 16]
+    mouth: [16, 24]
+    neck: [24, 32]
+
+data:
+  train_manifest: toy_data/train.txt
+  val_manifest: toy_data/val.txt
+  test_manifest: toy_data/test.txt
+  batch_size: 2
+  num_workers: 0
+
+optim:
+  lr: 0.0003
+  weight_decay: 0.0001
+  epochs: 2
+  grad_clip: 1.0
+  log_every: 2
+  save_every: 1
+
+runtime:
+  device: cpu
+  seed: 42
+  output_dir: runs/himatalk_toy
+
+loss:
+  rec: 1.0
+  str: 0.2
+  au: 0.1
+  reg: 0.5
+  temp: 0.2
+  acc: 0.05
+
+region_weights:
+  eye: 1.0
+  cheek: 1.0
+  mouth: 2.0
+  neck: 1.0

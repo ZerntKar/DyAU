@@ -1,0 +1,59 @@
+model:
+  audio_dim: 80
+  motion_dim: 128
+  hidden_dim: 256
+  interaction_dim: 256
+  lip_dim: 64
+  exp_dim: 64
+  state_dim: 64
+  affect_dim: 64
+  au_dim: 32
+  region_control_dim: 32
+  n_queries: 8
+  n_heads: 4
+  audio_layers: 3
+  motion_layers: 2
+  interaction_layers: 3
+  decoder_layers: 3
+  dropout: 0.1
+  pseudo_au_regions: [brow, eye, cheek, mouth, neck]
+  # Replace these slices with your real 3DMM/FLAME/blendshape index groups.
+  region_slices:
+    eye: [0, 32]
+    cheek: [32, 64]
+    mouth: [64, 96]
+    neck: [96, 128]
+
+data:
+  train_manifest: ""
+  val_manifest: ""
+  test_manifest: ""
+  batch_size: 4
+  num_workers: 0
+
+optim:
+  lr: 0.0001
+  weight_decay: 0.0001
+  epochs: 50
+  grad_clip: 1.0
+  log_every: 20
+  save_every: 1
+
+runtime:
+  device: auto
+  seed: 42
+  output_dir: runs/himatalk
+
+loss:
+  rec: 1.0
+  str: 0.2
+  au: 0.1
+  reg: 0.5
+  temp: 0.2
+  acc: 0.05
+
+region_weights:
+  eye: 1.0
+  cheek: 1.0
+  mouth: 2.0
+  neck: 1.0
