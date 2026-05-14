@@ -19,7 +19,7 @@ from .modules import (
 
 
 @dataclass
-class HimaTalkConfig:
+class DyAUConfig:
     audio_dim: int = 80
     motion_dim: int = 128
     hidden_dim: int = 256
@@ -46,10 +46,10 @@ class HimaTalkConfig:
         return default_region_slices(self.motion_dim)
 
 
-class HimaTalk(nn.Module):
+class DyAU(nn.Module):
     """Pseudo-AU guided dyadic speech-driven 3D facial motion generator."""
 
-    def __init__(self, config: HimaTalkConfig) -> None:
+    def __init__(self, config: DyAUConfig) -> None:
         super().__init__()
         self.config = config
         self.audio_encoder = SharedAudioEncoder(
@@ -209,9 +209,9 @@ class HimaTalk(nn.Module):
         return self.config.normalized_region_slices()
 
 
-def build_model(config_dict: Mapping[str, object] | HimaTalkConfig) -> HimaTalk:
-    if isinstance(config_dict, HimaTalkConfig):
+def build_model(config_dict: Mapping[str, object] | DyAUConfig) -> DyAU:
+    if isinstance(config_dict, DyAUConfig):
         config = config_dict
     else:
-        config = HimaTalkConfig(**dict(config_dict))
-    return HimaTalk(config)
+        config = DyAUConfig(**dict(config_dict))
+    return DyAU(config)

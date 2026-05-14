@@ -3,9 +3,9 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "himatalk"
+name = "DyAU"
 version = "0.1.0"
-description = "Pseudo-AU guided dyadic speech-driven 3D facial motion generation"
+description = "DyAU: pseudo-AU guided dyadic speech-driven 3D facial motion generation"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
@@ -15,4 +15,4 @@ dependencies = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["himatalk*"]
+include = ["DyAU*"]

@@ -42,7 +42,7 @@ optim:
 runtime:
   device: auto
   seed: 42
-  output_dir: runs/himatalk
+  output_dir: runs/DyAU
 
 loss:
   rec: 1.0

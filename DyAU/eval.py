@@ -9,12 +9,12 @@ from torch.utils.data import DataLoader
 from .config import load_config
 from .data import DyadicMotionDataset, collate_dyadic, move_to_device
 from .metrics import evaluate_batch
-from .model import HimaTalk
+from .model import DyAU
 from .utils import average_dicts, resolve_device, tensor_items
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Evaluate HimaTalk.")
+    parser = argparse.ArgumentParser(description="Evaluate DyAU.")
     parser.add_argument("--config", required=True, help="Path to YAML or JSON config.")
     parser.add_argument("--checkpoint", required=True, help="Checkpoint path.")
     parser.add_argument("--manifest", default="", help="Override test manifest.")
@@ -25,7 +25,7 @@ def main() -> None:
     if not manifest:
         raise ValueError("Provide --manifest or set data.test_manifest / data.val_manifest.")
     device = resolve_device(cfg.runtime.device)
-    model = HimaTalk(cfg.model).to(device)
+    model = DyAU(cfg.model).to(device)
     checkpoint = torch.load(args.checkpoint, map_location=device)
     model.load_state_dict(checkpoint["model"])
     model.eval()

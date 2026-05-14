@@ -11,7 +11,7 @@ except ImportError:  # pragma: no cover
     yaml = None
 
 from .losses import LossWeights
-from .model import HimaTalkConfig
+from .model import DyAUConfig
 
 
 @dataclass
@@ -37,12 +37,12 @@ class OptimConfig:
 class RuntimeConfig:
     device: str = "auto"
     seed: int = 42
-    output_dir: str = "runs/himatalk"
+    output_dir: str = "runs/DyAU"
 
 
 @dataclass
 class ExperimentConfig:
-    model: HimaTalkConfig = field(default_factory=HimaTalkConfig)
+    model: DyAUConfig = field(default_factory=DyAUConfig)
     data: DataConfig = field(default_factory=DataConfig)
     optim: OptimConfig = field(default_factory=OptimConfig)
     runtime: RuntimeConfig = field(default_factory=RuntimeConfig)

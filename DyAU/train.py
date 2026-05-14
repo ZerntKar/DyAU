@@ -10,9 +10,9 @@ from torch.utils.data import DataLoader
 
 from .config import load_config, to_dict
 from .data import DyadicMotionDataset, collate_dyadic, move_to_device
-from .losses import HimaTalkLoss
+from .losses import DyAULoss
 from .metrics import evaluate_batch
-from .model import HimaTalk
+from .model import DyAU
 from .utils import count_parameters, ensure_dir, resolve_device, set_seed, tensor_items
 
 
@@ -29,8 +29,8 @@ def build_loader(manifest: str, batch_size: int, num_workers: int, shuffle: bool
 
 
 def run_validation(
-    model: HimaTalk,
-    criterion: HimaTalkLoss,
+    model: DyAU,
+    criterion: DyAULoss,
     loader: DataLoader,
     device: torch.device,
 ) -> Dict[str, float]:
@@ -59,7 +59,7 @@ def run_validation(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Train HimaTalk.")
+    parser = argparse.ArgumentParser(description="Train DyAU.")
     parser.add_argument("--config", required=True, help="Path to YAML or JSON config.")
     parser.add_argument("--resume", default="", help="Optional checkpoint to resume from.")
     args = parser.parse_args()
@@ -69,8 +69,8 @@ def main() -> None:
     device = resolve_device(cfg.runtime.device)
     output_dir = ensure_dir(cfg.runtime.output_dir)
 
-    model = HimaTalk(cfg.model).to(device)
-    criterion = HimaTalkLoss(model.region_slices, cfg.loss, cfg.region_weights)
+    model = DyAU(cfg.model).to(device)
+    criterion = DyAULoss(model.region_slices, cfg.loss, cfg.region_weights)
     optimizer = torch.optim.AdamW(
         model.parameters(),
         lr=cfg.optim.lr,

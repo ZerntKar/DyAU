@@ -41,7 +41,7 @@ optim:
 runtime:
   device: cpu
   seed: 42
-  output_dir: runs/himatalk_toy
+  output_dir: runs/DyAU_toy
 
 loss:
   rec: 1.0

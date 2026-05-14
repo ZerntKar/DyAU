@@ -46,7 +46,7 @@ def make_split(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Create a tiny synthetic HimaTalk dataset.")
+    parser = argparse.ArgumentParser(description="Create a tiny synthetic DyAU dataset.")
     parser.add_argument("--out", default="toy_data", help="Output directory.")
     parser.add_argument("--audio-dim", type=int, default=16)
     parser.add_argument("--motion-dim", type=int, default=32)

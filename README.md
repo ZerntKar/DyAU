@@ -1,4 +1,4 @@
-# HimaTalk
+# DyAU
 
 Reference PyTorch implementation of **Pseudo-AU Guided Dyadic Speech-Driven
 3D Facial Motion Generation**.
@@ -19,8 +19,8 @@ The code mirrors the method section of the paper:
 
 ```text
 code/
-  himatalk/
-    model.py       # HimaTalk model assembly
+  DyAU/
+    model.py       # DyAU model assembly
     modules.py     # encoders, query summary, pseudo-AU, decoder, refiner
     losses.py      # multi-objective training loss
     metrics.py     # MVE/LVE/FDD/RPCC/IC-style metrics
@@ -28,8 +28,8 @@ code/
     train.py       # training entry point
     eval.py        # evaluation entry point
   configs/
-    himatalk.yaml      # full-size default config
-    himatalk_toy.yaml  # tiny config for local smoke training
+    DyAU.yaml      # full-size default config
+    DyAU_toy.yaml  # tiny config for local smoke training
   scripts/
     make_toy_data.py
     smoke_test.py
@@ -69,11 +69,11 @@ From this repository root:
 cd code
 python3 scripts/smoke_test.py
 python3 scripts/make_toy_data.py --out toy_data
-python3 -m himatalk.train --config configs/himatalk_toy.yaml
-python3 -m himatalk.eval --config configs/himatalk_toy.yaml --checkpoint runs/himatalk_toy/latest.pt
+python3 -m DyAU.train --config configs/DyAU_toy.yaml
+python3 -m DyAU.eval --config configs/DyAU_toy.yaml --checkpoint runs/DyAU_toy/latest.pt
 ```
 
-For real datasets, edit `configs/himatalk.yaml`:
+For real datasets, edit `configs/DyAU.yaml`:
 
 ```yaml
 data:
@@ -85,7 +85,7 @@ data:
 Then run:
 
 ```bash
-python3 -m himatalk.train --config configs/himatalk.yaml
+python3 -m DyAU.train --config configs/DyAU.yaml
 ```
 
 ## Notes

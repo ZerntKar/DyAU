@@ -7,13 +7,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import torch
 
-from himatalk.losses import HimaTalkLoss, LossWeights
-from himatalk.model import HimaTalk, HimaTalkConfig
+from DyAU.losses import DyAULoss, LossWeights
+from DyAU.model import DyAU, DyAUConfig
 
 
 def main() -> None:
     torch.manual_seed(7)
-    cfg = HimaTalkConfig(
+    cfg = DyAUConfig(
         audio_dim=16,
         motion_dim=32,
         hidden_dim=64,
@@ -32,7 +32,7 @@ def main() -> None:
         decoder_layers=1,
         dropout=0.0,
     )
-    model = HimaTalk(cfg)
+    model = DyAU(cfg)
     batch_size, time = 2, 12
     batch = {
         "audio_a": torch.randn(batch_size, time, cfg.audio_dim),
@@ -50,7 +50,7 @@ def main() -> None:
         batch["motion_a"],
         batch["motion_b"],
     )
-    criterion = HimaTalkLoss(model.region_slices, LossWeights())
+    criterion = DyAULoss(model.region_slices, LossWeights())
     losses = criterion(outputs, batch)
     losses["total"].backward()
     print("Smoke test passed.")

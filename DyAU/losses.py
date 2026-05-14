@@ -44,7 +44,7 @@ class LossWeights:
     acc: float = 0.05
 
 
-class HimaTalkLoss(nn.Module):
+class DyAULoss(nn.Module):
     """Multi-objective loss from the method section."""
 
     def __init__(
