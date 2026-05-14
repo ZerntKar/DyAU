@@ -61,37 +61,4 @@ blendshape coefficients, update `model.region_slices` in the config so the
 region-aware loss/refinement uses the correct mouth, eye, cheek, and neck
 indices.
 
-## Quick Start
 
-From this repository root:
-
-```bash
-cd code
-python3 scripts/smoke_test.py
-python3 scripts/make_toy_data.py --out toy_data
-python3 -m DyAU.train --config configs/DyAU_toy.yaml
-python3 -m DyAU.eval --config configs/DyAU_toy.yaml --checkpoint runs/DyAU_toy/latest.pt
-```
-
-For real datasets, edit `configs/DyAU.yaml`:
-
-```yaml
-data:
-  train_manifest: /path/to/train.txt
-  val_manifest: /path/to/val.txt
-  test_manifest: /path/to/test.txt
-```
-
-Then run:
-
-```bash
-python3 -m DyAU.train --config configs/DyAU.yaml
-```
-
-## Notes
-
-The paper does not specify all engineering choices, such as layer counts,
-feature dimensions, exact AU label construction, and facial-parameter region
-indices. Those are exposed as configuration fields. The default architecture is
-intended as a faithful, readable research baseline rather than a reproduction
-of unpublished implementation details.
