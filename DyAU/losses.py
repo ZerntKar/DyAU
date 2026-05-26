@@ -5,7 +5,6 @@ from typing import Dict, Mapping, Optional, Tuple
 
 import torch
 from torch import Tensor, nn
-import torch.nn.functional as F
 
 
 def masked_l1(pred: Tensor, target: Tensor, mask: Optional[Tensor] = None) -> Tensor:
@@ -36,12 +35,12 @@ def temporal_mask(mask: Optional[Tensor], order: int) -> Optional[Tensor]:
 
 @dataclass
 class LossWeights:
-    rec: float = 1.0
-    str: float = 0.2
-    au: float = 0.1
-    reg: float = 0.5
-    temp: float = 0.2
-    acc: float = 0.05
+    rec: float = 1.07
+    str: float = 0.47
+    au: float = 0.23
+    reg: float = 0.56
+    dyn: float = 0.13
+    second_order_mu: float = 0.46
 
 
 class DyAULoss(nn.Module):
@@ -116,21 +115,25 @@ class DyAULoss(nn.Module):
             total = total + masked_l1(pred_d, gt_d, mask)
         return total
 
+    def _dynamic(self, outputs: Mapping[str, object], batch: Mapping[str, Tensor]) -> Tuple[Tensor, Tensor, Tensor]:
+        first = self._temporal(outputs, batch, order=1)
+        second = self._temporal(outputs, batch, order=2)
+        dynamic = first + self.weights.second_order_mu * second
+        return dynamic, first, second
+
     def forward(self, outputs: Mapping[str, object], batch: Mapping[str, Tensor]) -> Dict[str, Tensor]:
         mask = batch.get("mask")
         rec = self._reconstruction(outputs, batch)
         structured = self._structured(outputs, mask)
         au = self._pseudo_au(outputs, batch)
         region = self._region(outputs, batch)
-        temp = self._temporal(outputs, batch, order=1)
-        acc = self._temporal(outputs, batch, order=2)
+        dynamic, first_order, second_order = self._dynamic(outputs, batch)
         total = (
             self.weights.rec * rec
             + self.weights.str * structured
             + self.weights.au * au
             + self.weights.reg * region
-            + self.weights.temp * temp
-            + self.weights.acc * acc
+            + self.weights.dyn * dynamic
         )
         return {
             "total": total,
@@ -138,6 +141,7 @@ class DyAULoss(nn.Module):
             "str": structured.detach(),
             "au": au.detach(),
             "reg": region.detach(),
-            "temp": temp.detach(),
-            "acc": acc.detach(),
+            "dyn": dynamic.detach(),
+            "vel": first_order.detach(),
+            "acc": second_order.detach(),
         }

@@ -19,15 +19,18 @@ class DataConfig:
     train_manifest: str = ""
     val_manifest: str = ""
     test_manifest: str = ""
-    batch_size: int = 4
+    batch_size: int = 16
     num_workers: int = 0
+    max_frames: int = 120
+    derive_missing_pseudo_au: bool = True
 
 
 @dataclass
 class OptimConfig:
     lr: float = 1e-4
     weight_decay: float = 1e-4
-    epochs: int = 50
+    epochs: int = 100
+    warmup_epochs: int = 5
     grad_clip: float = 1.0
     log_every: int = 20
     save_every: int = 1

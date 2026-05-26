@@ -22,15 +22,16 @@ def main() -> None:
         exp_dim=16,
         state_dim=16,
         affect_dim=16,
-        au_dim=12,
+        au_dim=32,
         region_control_dim=8,
         n_queries=4,
         n_heads=4,
-        audio_layers=1,
+        audio_layers=0,
         motion_layers=1,
         interaction_layers=1,
         decoder_layers=1,
         dropout=0.0,
+        pseudo_au_regions=("mouth_jaw", "brow_eye", "cheek", "head_neck"),
     )
     model = DyAU(cfg)
     batch_size, time = 2, 12

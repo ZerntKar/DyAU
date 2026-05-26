@@ -11,30 +11,33 @@ model:
   region_control_dim: 32
   n_queries: 8
   n_heads: 4
-  audio_layers: 3
+  audio_layers: 0
   motion_layers: 2
-  interaction_layers: 3
-  decoder_layers: 3
+  interaction_layers: 4
+  decoder_layers: 4
   dropout: 0.1
-  pseudo_au_regions: [brow, eye, cheek, mouth, neck]
+  pseudo_au_regions: [mouth_jaw, brow_eye, cheek, head_neck]
   # Replace these slices with your real 3DMM/FLAME/blendshape index groups.
   region_slices:
-    eye: [0, 32]
-    cheek: [32, 64]
-    mouth: [64, 96]
-    neck: [96, 128]
+    mouth_jaw: [0, 32]
+    brow_eye: [32, 64]
+    cheek: [64, 96]
+    head_neck: [96, 128]
 
 data:
   train_manifest: ""
   val_manifest: ""
   test_manifest: ""
-  batch_size: 4
+  batch_size: 16
   num_workers: 0
+  max_frames: 120
+  derive_missing_pseudo_au: true
 
 optim:
   lr: 0.0001
   weight_decay: 0.0001
-  epochs: 50
+  epochs: 100
+  warmup_epochs: 5
   grad_clip: 1.0
   log_every: 20
   save_every: 1
@@ -45,15 +48,15 @@ runtime:
   output_dir: runs/DyAU
 
 loss:
-  rec: 1.0
-  str: 0.2
-  au: 0.1
-  reg: 0.5
-  temp: 0.2
-  acc: 0.05
+  rec: 1.07
+  str: 0.47
+  au: 0.23
+  reg: 0.56
+  dyn: 0.13
+  second_order_mu: 0.46
 
 region_weights:
-  eye: 1.0
-  cheek: 1.0
-  mouth: 2.0
-  neck: 1.0
+  mouth_jaw: 1.43
+  brow_eye: 1.17
+  cheek: 0.96
+  head_neck: 1.08

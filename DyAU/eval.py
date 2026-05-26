@@ -31,7 +31,13 @@ def main() -> None:
     model.eval()
 
     loader = DataLoader(
-        DyadicMotionDataset(manifest),
+        DyadicMotionDataset(
+            manifest,
+            max_frames=cfg.data.max_frames,
+            derive_missing_pseudo_au=cfg.data.derive_missing_pseudo_au,
+            pseudo_au_dim=cfg.model.au_dim,
+            region_slices=model.region_slices,
+        ),
         batch_size=cfg.data.batch_size,
         shuffle=False,
         num_workers=cfg.data.num_workers,

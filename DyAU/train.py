@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
-from typing import Dict, Iterable, Mapping, Optional
+import math
+from typing import Dict, Mapping, Tuple
 
 import torch
 from torch.utils.data import DataLoader
@@ -16,8 +16,23 @@ from .model import DyAU
 from .utils import count_parameters, ensure_dir, resolve_device, set_seed, tensor_items
 
 
-def build_loader(manifest: str, batch_size: int, num_workers: int, shuffle: bool) -> DataLoader:
-    dataset = DyadicMotionDataset(manifest)
+def build_loader(
+    manifest: str,
+    batch_size: int,
+    num_workers: int,
+    shuffle: bool,
+    max_frames: int,
+    derive_missing_pseudo_au: bool,
+    pseudo_au_dim: int,
+    region_slices: Mapping[str, Tuple[int, int]],
+) -> DataLoader:
+    dataset = DyadicMotionDataset(
+        manifest,
+        max_frames=max_frames,
+        derive_missing_pseudo_au=derive_missing_pseudo_au,
+        pseudo_au_dim=pseudo_au_dim,
+        region_slices=region_slices,
+    )
     return DataLoader(
         dataset,
         batch_size=batch_size,
@@ -58,6 +73,19 @@ def run_validation(
     return result
 
 
+def build_scheduler(optimizer: torch.optim.Optimizer, steps_per_epoch: int, epochs: int, warmup_epochs: int):
+    total_steps = max(1, steps_per_epoch * epochs)
+    warmup_steps = max(1, steps_per_epoch * warmup_epochs)
+
+    def lr_lambda(step: int) -> float:
+        if step < warmup_steps:
+            return float(step + 1) / float(warmup_steps)
+        progress = (step - warmup_steps) / max(1, total_steps - warmup_steps)
+        return 0.5 * (1.0 + math.cos(math.pi * min(1.0, progress)))
+
+    return torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train DyAU.")
     parser.add_argument("--config", required=True, help="Path to YAML or JSON config.")
@@ -76,19 +104,31 @@ def main() -> None:
         lr=cfg.optim.lr,
         weight_decay=cfg.optim.weight_decay,
     )
-    start_epoch = 0
-    if args.resume:
-        checkpoint = torch.load(args.resume, map_location=device)
-        model.load_state_dict(checkpoint["model"])
-        optimizer.load_state_dict(checkpoint["optimizer"])
-        start_epoch = int(checkpoint.get("epoch", 0)) + 1
-
     train_loader = build_loader(
         cfg.data.train_manifest,
         cfg.data.batch_size,
         cfg.data.num_workers,
         shuffle=True,
+        max_frames=cfg.data.max_frames,
+        derive_missing_pseudo_au=cfg.data.derive_missing_pseudo_au,
+        pseudo_au_dim=cfg.model.au_dim,
+        region_slices=model.region_slices,
     )
+    scheduler = build_scheduler(
+        optimizer,
+        steps_per_epoch=len(train_loader),
+        epochs=cfg.optim.epochs,
+        warmup_epochs=cfg.optim.warmup_epochs,
+    )
+    start_epoch = 0
+    if args.resume:
+        checkpoint = torch.load(args.resume, map_location=device)
+        model.load_state_dict(checkpoint["model"])
+        optimizer.load_state_dict(checkpoint["optimizer"])
+        if "scheduler" in checkpoint:
+            scheduler.load_state_dict(checkpoint["scheduler"])
+        start_epoch = int(checkpoint.get("epoch", 0)) + 1
+
     val_loader = None
     if cfg.data.val_manifest:
         val_loader = build_loader(
@@ -96,6 +136,10 @@ def main() -> None:
             cfg.data.batch_size,
             cfg.data.num_workers,
             shuffle=False,
+            max_frames=cfg.data.max_frames,
+            derive_missing_pseudo_au=cfg.data.derive_missing_pseudo_au,
+            pseudo_au_dim=cfg.model.au_dim,
+            region_slices=model.region_slices,
         )
 
     with (output_dir / "config.json").open("w", encoding="utf-8") as f:
@@ -121,11 +165,13 @@ def main() -> None:
             if cfg.optim.grad_clip > 0:
                 torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.optim.grad_clip)
             optimizer.step()
+            scheduler.step()
             global_step += 1
             if global_step % cfg.optim.log_every == 0:
                 items = tensor_items(loss_dict)
+                lr = optimizer.param_groups[0]["lr"]
                 msg = " ".join(f"{key}={value:.4f}" for key, value in items.items())
-                print(f"epoch={epoch} step={global_step} {msg}")
+                print(f"epoch={epoch} step={global_step} lr={lr:.6g} {msg}")
 
         summary: Dict[str, float] = {}
         if val_loader is not None:
@@ -138,6 +184,7 @@ def main() -> None:
                 "epoch": epoch,
                 "model": model.state_dict(),
                 "optimizer": optimizer.state_dict(),
+                "scheduler": scheduler.state_dict(),
                 "config": to_dict(cfg),
                 "validation": summary,
             }

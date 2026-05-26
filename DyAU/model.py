@@ -32,12 +32,12 @@ class DyAUConfig:
     region_control_dim: int = 32
     n_queries: int = 8
     n_heads: int = 4
-    audio_layers: int = 3
+    audio_layers: int = 0
     motion_layers: int = 2
-    interaction_layers: int = 3
-    decoder_layers: int = 3
+    interaction_layers: int = 4
+    decoder_layers: int = 4
     dropout: float = 0.1
-    pseudo_au_regions: Tuple[str, ...] = ("brow", "eye", "cheek", "mouth", "neck")
+    pseudo_au_regions: Tuple[str, ...] = ("mouth_jaw", "brow_eye", "cheek", "head_neck")
     region_slices: Dict[str, Tuple[int, int]] = field(default_factory=dict)
 
     def normalized_region_slices(self) -> Dict[str, Tuple[int, int]]:

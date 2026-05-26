@@ -50,7 +50,7 @@ def main() -> None:
     parser.add_argument("--out", default="toy_data", help="Output directory.")
     parser.add_argument("--audio-dim", type=int, default=16)
     parser.add_argument("--motion-dim", type=int, default=32)
-    parser.add_argument("--au-dim", type=int, default=12)
+    parser.add_argument("--au-dim", type=int, default=32)
     parser.add_argument("--min-len", type=int, default=16)
     parser.add_argument("--max-len", type=int, default=24)
     args = parser.parse_args()

@@ -41,7 +41,7 @@ def evaluate_batch(
     gt_a, gt_b = batch["motion_a"], batch["motion_b"]
     mve = 0.5 * (masked_l1(pred_a, gt_a, mask) + masked_l1(pred_b, gt_b, mask))
 
-    mouth = region_slices.get("mouth")
+    mouth = region_slices.get("mouth_jaw") or region_slices.get("mouth")
     if mouth is not None:
         s, e = mouth
         lve = 0.5 * (

@@ -42,6 +42,11 @@ class TemporalTransformer(nn.Module):
         dropout: float = 0.1,
     ) -> None:
         super().__init__()
+        self.enabled = n_layers > 0
+        if not self.enabled:
+            self.encoder = nn.Identity()
+            self.norm = nn.LayerNorm(dim)
+            return
         layer = nn.TransformerEncoderLayer(
             d_model=dim,
             nhead=n_heads,
@@ -55,6 +60,8 @@ class TemporalTransformer(nn.Module):
         self.norm = nn.LayerNorm(dim)
 
     def forward(self, x: Tensor, mask: Optional[Tensor] = None) -> Tensor:
+        if not self.enabled:
+            return self.norm(x)
         x = self.encoder(x, src_key_padding_mask=_padding_mask(mask))
         return self.norm(x)
 
@@ -92,7 +99,8 @@ class SharedAudioEncoder(nn.Module):
     ) -> None:
         super().__init__()
         self.input_proj = nn.Sequential(nn.LayerNorm(audio_dim), nn.Linear(audio_dim, hidden_dim))
-        self.conv = nn.ModuleList([ConvBlock(hidden_dim, conv_kernel, dropout) for _ in range(2)])
+        conv_layers = 0 if n_layers == 0 else 2
+        self.conv = nn.ModuleList([ConvBlock(hidden_dim, conv_kernel, dropout) for _ in range(conv_layers)])
         self.temporal = TemporalTransformer(hidden_dim, n_heads, n_layers, dropout=dropout)
 
     def forward(self, audio: Tensor, mask: Optional[Tensor] = None) -> Tensor:
@@ -142,7 +150,7 @@ class DualStreamInteractionEncoder(nn.Module):
         dropout: float = 0.1,
     ) -> None:
         super().__init__()
-        in_dim = hidden_dim * 4
+        in_dim = hidden_dim * 2
         self.fusion = nn.Sequential(
             nn.LayerNorm(in_dim),
             nn.Linear(in_dim, interaction_dim),
@@ -153,7 +161,7 @@ class DualStreamInteractionEncoder(nn.Module):
         self.temporal = TemporalTransformer(interaction_dim, n_heads, n_layers, dropout=dropout)
 
     def forward(self, stream_a: Tensor, stream_b: Tensor, mask: Optional[Tensor] = None) -> Tensor:
-        fused = torch.cat([stream_a, stream_b, stream_a - stream_b, stream_a * stream_b], dim=-1)
+        fused = torch.cat([stream_a, stream_b], dim=-1)
         return self.temporal(self.fusion(fused), mask)
 
 
@@ -220,12 +228,12 @@ class PseudoAUPrior(nn.Module):
         self.region_names = tuple(region_names)
         global_in = interaction_dim + state_dim + affect_dim
         frame_in = interaction_dim + interaction_dim + state_dim + affect_dim
-        self.global_net = build_mlp(global_in, interaction_dim, au_dim, depth=3, dropout=dropout)
-        self.frame_net = build_mlp(frame_in, interaction_dim, au_dim, depth=3, dropout=dropout)
+        self.global_net = build_mlp(global_in, interaction_dim, au_dim, depth=2, dropout=dropout, activation=nn.ReLU)
+        self.frame_net = build_mlp(frame_in, interaction_dim, au_dim, depth=2, dropout=dropout, activation=nn.ReLU)
         self.subject_embed = nn.Embedding(2, au_dim)
         self.region_heads = nn.ModuleDict(
             {
-                name: build_mlp(au_dim, au_dim, region_control_dim, depth=2, dropout=dropout)
+                name: build_mlp(au_dim, au_dim, region_control_dim, depth=2, dropout=dropout, activation=nn.ReLU)
                 for name in self.region_names
             }
         )
@@ -347,7 +355,7 @@ class RegionSlice:
 
 
 def default_region_slices(motion_dim: int) -> Dict[str, Tuple[int, int]]:
-    names = ["eye", "cheek", "mouth", "neck"]
+    names = ["mouth_jaw", "brow_eye", "cheek", "head_neck"]
     base = motion_dim // len(names)
     result: Dict[str, Tuple[int, int]] = {}
     start = 0
@@ -376,19 +384,15 @@ class RegionResidualRefiner(nn.Module):
         self.context_proj = nn.Linear(context_dim, hidden_dim)
         self.net = nn.Sequential(
             nn.LayerNorm(hidden_dim),
-            nn.Conv1d(hidden_dim, hidden_dim, kernel_size=5, padding=2),
-            nn.GELU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Conv1d(hidden_dim, hidden_dim, kernel_size=5, padding=2),
-            nn.GELU(),
+            nn.Linear(hidden_dim, region_dim),
         )
-        self.out = nn.Linear(hidden_dim, region_dim)
 
     def forward(self, local_motion: Tensor, context: Tensor) -> Tensor:
         x = self.local_proj(local_motion) + self.context_proj(context)
-        y = self.net[0](x).transpose(1, 2)
-        y = self.net[1:](y).transpose(1, 2)
-        return self.out(x + y)
+        return self.net(x)
 
 
 class RegionAwareRefinement(nn.Module):
@@ -431,8 +435,17 @@ class RegionAwareRefinement(nn.Module):
     def _control_for_region(self, region: str, controls: Mapping[str, Tensor]) -> Tensor:
         if region in controls:
             return controls[region]
-        if region == "eye" and "brow" in controls:
-            return controls["brow"]
+        aliases = {
+            "mouth": "mouth_jaw",
+            "jaw": "mouth_jaw",
+            "eye": "brow_eye",
+            "brow": "brow_eye",
+            "neck": "head_neck",
+            "head": "head_neck",
+        }
+        alias = aliases.get(region)
+        if alias in controls:
+            return controls[alias]
         first = next(iter(controls.values()))
         return torch.zeros_like(first)
 

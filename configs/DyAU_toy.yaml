@@ -7,21 +7,21 @@ model:
   exp_dim: 16
   state_dim: 16
   affect_dim: 16
-  au_dim: 12
+  au_dim: 32
   region_control_dim: 8
   n_queries: 4
   n_heads: 4
-  audio_layers: 1
+  audio_layers: 0
   motion_layers: 1
   interaction_layers: 1
   decoder_layers: 1
   dropout: 0.1
-  pseudo_au_regions: [brow, eye, cheek, mouth, neck]
+  pseudo_au_regions: [mouth_jaw, brow_eye, cheek, head_neck]
   region_slices:
-    eye: [0, 8]
-    cheek: [8, 16]
-    mouth: [16, 24]
-    neck: [24, 32]
+    mouth_jaw: [0, 8]
+    brow_eye: [8, 16]
+    cheek: [16, 24]
+    head_neck: [24, 32]
 
 data:
   train_manifest: toy_data/train.txt
@@ -29,11 +29,14 @@ data:
   test_manifest: toy_data/test.txt
   batch_size: 2
   num_workers: 0
+  max_frames: 120
+  derive_missing_pseudo_au: true
 
 optim:
   lr: 0.0003
   weight_decay: 0.0001
   epochs: 2
+  warmup_epochs: 1
   grad_clip: 1.0
   log_every: 2
   save_every: 1
@@ -44,15 +47,15 @@ runtime:
   output_dir: runs/DyAU_toy
 
 loss:
-  rec: 1.0
-  str: 0.2
-  au: 0.1
-  reg: 0.5
-  temp: 0.2
-  acc: 0.05
+  rec: 1.07
+  str: 0.47
+  au: 0.23
+  reg: 0.56
+  dyn: 0.13
+  second_order_mu: 0.46
 
 region_weights:
-  eye: 1.0
-  cheek: 1.0
-  mouth: 2.0
-  neck: 1.0
+  mouth_jaw: 1.43
+  brow_eye: 1.17
+  cheek: 0.96
+  head_neck: 1.08
