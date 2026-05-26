@@ -61,16 +61,19 @@ def derive_pseudo_au_from_motion(
     slices = dict(region_slices) if region_slices else _default_region_slices(motion.shape[-1])
     channels_per_group = max(1, au_dim // len(PSEUDO_AU_GROUPS))
     velocity = torch.zeros_like(motion)
-    velocity[1:] = (motion[1:] - motion[:-1]).abs()
+    if motion.dim() == 2:
+        velocity[1:] = (motion[1:] - motion[:-1]).abs()
+    else:
+        velocity[..., 1:, :] = (motion[..., 1:, :] - motion[..., :-1, :]).abs()
     channels = []
     for group in PSEUDO_AU_GROUPS:
         start, end = slices[group]
         score = velocity[..., start:end].mean(dim=-1, keepdim=True)
         score = score / score.max().clamp_min(1e-6)
-        channels.append(score.repeat(1, channels_per_group))
+        channels.append(score.repeat_interleave(channels_per_group, dim=-1))
     pseudo = torch.cat(channels, dim=-1)
     if pseudo.shape[-1] < au_dim:
-        pad = pseudo.new_zeros(pseudo.shape[0], au_dim - pseudo.shape[-1])
+        pad = pseudo.new_zeros(*pseudo.shape[:-1], au_dim - pseudo.shape[-1])
         pseudo = torch.cat([pseudo, pad], dim=-1)
     return pseudo[..., :au_dim]
 

@@ -1,20 +1,27 @@
 # DyAU
 
-Reference PyTorch implementation of **Pseudo-AU Guided Dyadic Speech-Driven
-3D Facial Motion Generation**.
+Reference PyTorch implementation of **DyAU: Pseudo-AU-Guided Dyadic
+Speech-Driven 3D Facial Motion Generation**.
 
-The code mirrors the method section of the paper:
+This repository implements the model backbone and training objective described
+in the paper. It is intended as a clean reference implementation for method
+inspection and adaptation. Full paper reproduction still requires the same
+external preprocessing pipeline, dataset splits, baseline implementations, and
+hardware setup used in the experiments.
 
-- shared dual-stream audio encoding for two speakers;
-- structured motion encoding with lip and expression latent spaces;
-- interaction query summary for speaking dominance, listener feedback, role
-  switching, and affective cues;
-- four Pseudo-AU groups: Mouth/Jaw, Brow-Eye, Cheek, and Head-Neck;
-- subject-wise Pseudo-AU priors as region-level control signals;
-- conditional motion decoding for both subjects;
-- region-aware residual MLP refinement;
-- reconstruction, structured consistency, pseudo-AU, region, and dynamic losses
-  with first- and second-order temporal terms.
+## What Is Implemented
+
+- Shared dual-stream audio feature projection for two subjects.
+- Structured motion encoder with lip and expression latent supervision.
+- Interaction query summary with learnable query tokens and cross-attention.
+- Four Pseudo-AU groups: Mouth/Jaw, Brow-Eye, Cheek, and Head-Neck.
+- Subject-wise Pseudo-AU priors and region-level control heads.
+- Conditional temporal motion decoding for both subjects.
+- Region-aware residual MLP refinement.
+- Reconstruction, auxiliary structured consistency, Pseudo-AU, region, and
+  dynamic losses with first- and second-order temporal terms.
+- Paper-aligned evaluation outputs: `mve`, `mouth_jaw`, `brow_eye`, `cheek`,
+  `head_neck`, paper-defined `fdd`, `pau_e`, and `rpcc`.
 
 ## Layout
 
@@ -22,15 +29,14 @@ The code mirrors the method section of the paper:
 code/
   DyAU/
     model.py       # DyAU model assembly
-    modules.py     # encoders, query summary, pseudo-AU, decoder, refiner
+    modules.py     # encoders, query summary, Pseudo-AU, decoder, refiner
     losses.py      # multi-objective training loss
-    metrics.py     # MVE/LVE/FDD/RPCC/IC-style metrics
-    data.py        # NPZ dataset and padding collate function
-    train.py       # training entry point
+    metrics.py     # paper-style MVE/regional/FDD/PAU-E/rPCC metrics
+    data.py        # NPZ dataset, padding collate, fallback Pseudo-AU labels
+    train.py       # single-device training entry point
     eval.py        # evaluation entry point
   configs/
-    DyAU.yaml      # full-size default config
-
+    DyAU.yaml      # paper-style default config
 ```
 
 ## Data Format
@@ -38,7 +44,7 @@ code/
 Training data is loaded from a manifest file. Each line is either a relative
 path to an `.npz` file or a JSON line with a `path` field.
 
-Each `.npz` sample must contain:
+Each `.npz` sample must contain pre-extracted, frame-aligned features:
 
 ```text
 audio_a:  [T, audio_dim]
@@ -54,14 +60,19 @@ pseudo_au_a: [T, au_dim]
 pseudo_au_b: [T, au_dim]
 ```
 
+The paper uses a pre-trained speech encoder to extract frame-level speech
+features. This released code expects those speech features to be extracted
+offline and stored as `audio_a` / `audio_b`; the in-repo `SharedAudioEncoder`
+is the shared projection and temporal modeling layer on top of those features.
+
+The paper uses OpenFace 2.0 AU estimates when reliable RGB face tracking is
+available. This repository does not vendor OpenFace or run it internally. If
+`pseudo_au_a` / `pseudo_au_b` are present in the NPZ files, they are used
+directly. If they are missing, the loader derives fallback weak labels from
+normalized local motion variation in the four semantic regions, matching the
+paper's motion-statistics fallback path.
+
 The exact 3D motion representation is dataset-dependent. For FLAME, 3DMM, or
 blendshape coefficients, update `model.region_slices` in the config so the
 region-aware loss/refinement uses the four paper regions: `mouth_jaw`,
 `brow_eye`, `cheek`, and `head_neck`.
-
-If explicit `pseudo_au_a` / `pseudo_au_b` labels are missing, the dataset loader
-can derive fallback weak labels from normalized local motion variation in these
-four regions. This mirrors the paper's motion-statistics fallback when reliable
-OpenFace AU estimates are unavailable.
-
-
