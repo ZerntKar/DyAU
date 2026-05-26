@@ -30,10 +30,7 @@ code/
     eval.py        # evaluation entry point
   configs/
     DyAU.yaml      # full-size default config
-    DyAU_toy.yaml  # tiny config for local smoke training
-  scripts/
-    make_toy_data.py
-    smoke_test.py
+
 ```
 
 ## Data Format
@@ -68,39 +65,3 @@ four regions. This mirrors the paper's motion-statistics fallback when reliable
 OpenFace AU estimates are unavailable.
 
 
-<<<<<<< HEAD
-=======
-From this repository root:
-
-```bash
-cd code
-python3 scripts/smoke_test.py
-python3 scripts/make_toy_data.py --out toy_data
-python3 -m DyAU.train --config configs/DyAU_toy.yaml
-python3 -m DyAU.eval --config configs/DyAU_toy.yaml --checkpoint runs/DyAU_toy/latest.pt
-```
-
-For real datasets, edit `configs/DyAU.yaml`:
-
-```yaml
-data:
-  train_manifest: /path/to/train.txt
-  val_manifest: /path/to/val.txt
-  test_manifest: /path/to/test.txt
-```
-
-Then run:
-
-```bash
-python3 -m DyAU.train --config configs/DyAU.yaml
-```
-
-## Notes
-
-The current paper specifies the main default settings used here: 256-dimensional
-shared audio projection, 4-layer 4-head interaction encoder and motion decoder,
-8 interaction query tokens, 32-dimensional Pseudo-AU space split into four
-8-channel groups, 120-frame input clips, AdamW, 5-epoch warmup, cosine learning
-rate decay, and the reported loss/region weights. Dataset-specific facial
-parameter indices still need to be set in `model.region_slices`.
->>>>>>> 4c6f80e (update code)
