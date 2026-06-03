@@ -1,7 +1,6 @@
 # DyAU
 
-Reference PyTorch implementation of **DyAU: Pseudo-AU-Guided Dyadic
-Speech-Driven 3D Facial Motion Generation**.
+Reference PyTorch implementation of **DyAU: Interaction-Aware Regional Priors for Dyadic Speech-Driven 3D Facial Motion Generation**.
 
 This repository implements the model backbone and training objective described
 in the paper. It is intended as a clean reference implementation for method
