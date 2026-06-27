@@ -11,14 +11,14 @@ hardware setup used in the experiments.
 ## What Is Implemented
 
 - Shared dual-stream audio feature projection for two subjects.
-- Structured motion encoder with lip and expression latent supervision.
+- Structured motion encoder with lip and expression latent decomposition.
 - Interaction query summary with learnable query tokens and cross-attention.
 - Four Pseudo-AU groups: Mouth/Jaw, Brow-Eye, Cheek, and Head-Neck.
 - Subject-wise Pseudo-AU priors and region-level control heads.
 - Conditional temporal motion decoding for both subjects.
 - Region-aware residual MLP refinement.
-- Reconstruction, auxiliary structured consistency, Pseudo-AU, region, and
-  dynamic losses with first- and second-order temporal terms.
+- Paper-matched reconstruction, Pseudo-AU, region, and dynamic losses with
+  first- and second-order temporal terms.
 - Paper-aligned evaluation outputs: `mve`, `mouth_jaw`, `brow_eye`, `cheek`,
   `head_neck`, paper-defined `fdd`, `pau_e`, and `rpcc`.
 
@@ -51,6 +51,12 @@ audio_b:  [T, audio_dim]
 motion_a: [T, motion_dim]
 motion_b: [T, motion_dim]
 ```
+
+For exact paper-style MVE and regional errors, store facial motion as flattened
+XYZ vertices (`motion_dim = 3 * #vertices`) and set `model.region_slices` to
+vertex-coordinate ranges. If coefficient representations are used instead,
+the evaluation code falls back to coefficient-space L1 errors for `mve` and
+regional metrics.
 
 Optional weak Pseudo-AU labels:
 

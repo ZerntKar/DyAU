@@ -48,15 +48,14 @@ runtime:
   output_dir: runs/DyAU
 
 loss:
-  rec: 1.07
-  str: 0.47
-  au: 0.23
-  reg: 0.56
-  dyn: 0.13
-  second_order_mu: 0.46
+  rec: 1.0
+  au: 0.2
+  reg: 0.5
+  dyn: 0.1
+  second_order_mu: 0.5
 
 region_weights:
-  mouth_jaw: 1.43
-  brow_eye: 1.17
-  cheek: 0.96
-  head_neck: 1.08
+  mouth_jaw: 1.4
+  brow_eye: 1.2
+  cheek: 1.0
+  head_neck: 1.1

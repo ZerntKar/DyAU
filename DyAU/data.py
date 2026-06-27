@@ -54,7 +54,7 @@ def derive_pseudo_au_from_motion(
 
     The current paper defines four Pseudo-AU groups. If OpenFace AU estimates
     are not available in an NPZ file, this function approximates weak labels by
-    normalized absolute temporal variation in each semantic region, then repeats
+    min-max normalized absolute temporal variation in each semantic region, then repeats
     each group score across its assigned channels.
     """
 
@@ -69,7 +69,9 @@ def derive_pseudo_au_from_motion(
     for group in PSEUDO_AU_GROUPS:
         start, end = slices[group]
         score = velocity[..., start:end].mean(dim=-1, keepdim=True)
-        score = score / score.max().clamp_min(1e-6)
+        score_min = score.amin()
+        score_max = score.amax()
+        score = (score - score_min) / (score_max - score_min).clamp_min(1e-6)
         channels.append(score.repeat_interleave(channels_per_group, dim=-1))
     pseudo = torch.cat(channels, dim=-1)
     if pseudo.shape[-1] < au_dim:

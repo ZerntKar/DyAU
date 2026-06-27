@@ -12,6 +12,29 @@ from .losses import masked_l1, temporal_difference, temporal_mask
 PAPER_REGIONS = ("mouth_jaw", "brow_eye", "cheek", "head_neck")
 
 
+def _looks_like_flat_vertices(x: Tensor) -> bool:
+    return x.shape[-1] >= 3 and x.shape[-1] % 3 == 0
+
+
+def motion_error(pred: Tensor, target: Tensor, mask: Optional[Tensor]) -> Tensor:
+    """Paper MVE/regional error when motion is flattened XYZ vertices.
+
+    The paper defines MVE and regional errors as mean Euclidean distance over
+    3D vertices. If the input representation is not flattened XYZ coordinates
+    (for example 3DMM or blendshape coefficients), we fall back to parameter
+    L1 so the reference implementation can still evaluate coefficient data.
+    """
+
+    if not _looks_like_flat_vertices(pred) or pred.shape[-1] != target.shape[-1]:
+        return masked_l1(pred, target, mask)
+
+    dist = (pred - target).reshape(*pred.shape[:-1], -1, 3).norm(dim=-1)
+    if mask is None:
+        return dist.mean()
+    weights = mask.to(dist.dtype).unsqueeze(-1)
+    return (dist * weights).sum() / weights.sum().clamp_min(1.0) / dist.shape[-1]
+
+
 def _masked_std(x: Tensor, mask: Optional[Tensor]) -> Tensor:
     if mask is None:
         return x.std(dim=(0, 1), unbiased=False).mean()
@@ -53,8 +76,8 @@ def _region_error(
 ) -> Tensor:
     start, end = bounds
     return 0.5 * (
-        masked_l1(pred_a[..., start:end], gt_a[..., start:end], mask)
-        + masked_l1(pred_b[..., start:end], gt_b[..., start:end], mask)
+        motion_error(pred_a[..., start:end], gt_a[..., start:end], mask)
+        + motion_error(pred_b[..., start:end], gt_b[..., start:end], mask)
     )
 
 
@@ -121,7 +144,7 @@ def evaluate_batch(
     motion = outputs["motion"]
     pred_a, pred_b = motion["a"], motion["b"]
     gt_a, gt_b = batch["motion_a"], batch["motion_b"]
-    mve = 0.5 * (masked_l1(pred_a, gt_a, mask) + masked_l1(pred_b, gt_b, mask))
+    mve = 0.5 * (motion_error(pred_a, gt_a, mask) + motion_error(pred_b, gt_b, mask))
 
     region_metrics = {
         name: _region_error(pred_a, pred_b, gt_a, gt_b, mask, region_slices[name])

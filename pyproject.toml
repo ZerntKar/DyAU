@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "DyAU"
 version = "0.1.0"
-description = "DyAU: pseudo-AU guided dyadic speech-driven 3D facial motion generation"
+description = "DyAU: interaction-aware regional priors for dyadic speech-driven 3D facial motion generation"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [

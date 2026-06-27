@@ -35,12 +35,11 @@ def temporal_mask(mask: Optional[Tensor], order: int) -> Optional[Tensor]:
 
 @dataclass
 class LossWeights:
-    rec: float = 1.07
-    str: float = 0.47
-    au: float = 0.23
-    reg: float = 0.56
-    dyn: float = 0.13
-    second_order_mu: float = 0.46
+    rec: float = 1.0
+    au: float = 0.2
+    reg: float = 0.5
+    dyn: float = 0.1
+    second_order_mu: float = 0.5
 
 
 class DyAULoss(nn.Module):
@@ -61,18 +60,6 @@ class DyAULoss(nn.Module):
         mask = batch.get("mask")
         motion = outputs["motion"]
         return masked_l1(motion["a"], batch["motion_a"], mask) + masked_l1(motion["b"], batch["motion_b"], mask)
-
-    def _structured(self, outputs: Mapping[str, object], mask: Optional[Tensor]) -> Tensor:
-        if "motion_latents" not in outputs:
-            return torch.tensor(0.0, device=next(iter(outputs["motion"].values())).device)
-        latents = outputs["motion_latents"]
-        total = 0.0
-        for subject in ("a", "b"):
-            pred = latents["pred"][subject]
-            gt = latents["gt"][subject]
-            total = total + masked_l1(pred["lip"], gt["lip"].detach(), mask)
-            total = total + masked_l1(pred["exp"], gt["exp"].detach(), mask)
-        return total
 
     def _pseudo_au(self, outputs: Mapping[str, object], batch: Mapping[str, Tensor]) -> Tensor:
         mask = batch.get("mask")
@@ -124,13 +111,11 @@ class DyAULoss(nn.Module):
     def forward(self, outputs: Mapping[str, object], batch: Mapping[str, Tensor]) -> Dict[str, Tensor]:
         mask = batch.get("mask")
         rec = self._reconstruction(outputs, batch)
-        structured = self._structured(outputs, mask)
         au = self._pseudo_au(outputs, batch)
         region = self._region(outputs, batch)
         dynamic, first_order, second_order = self._dynamic(outputs, batch)
         total = (
             self.weights.rec * rec
-            + self.weights.str * structured
             + self.weights.au * au
             + self.weights.reg * region
             + self.weights.dyn * dynamic
@@ -138,7 +123,6 @@ class DyAULoss(nn.Module):
         return {
             "total": total,
             "rec": rec.detach(),
-            "str": structured.detach(),
             "au": au.detach(),
             "reg": region.detach(),
             "dyn": dynamic.detach(),
